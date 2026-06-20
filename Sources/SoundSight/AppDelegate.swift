@@ -79,6 +79,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         rootView.addSubview(universalControlStatusLabel)
         rootView.addSubview(detectButton)
 
+        let scanButton = NSButton(
+            title: "Scan Universal Control Interface",
+            target: self,
+            action: #selector(scanUniversalControlInterface)
+        )
+        scanButton.translatesAutoresizingMaskIntoConstraints = false
+        scanButton.bezelStyle = .rounded
+        scanButton.setAccessibilityLabel(
+            "Scan Universal Control Interface"
+        )
+        scanButton.setAccessibilityHelp(
+            "Scans the menu bar, windows, controls, values, and actions exposed by Fender Universal Control."
+        )
+        rootView.addSubview(scanButton)
+
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(
                 equalTo: rootView.topAnchor,
@@ -136,11 +151,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ),
             detectButton.centerXAnchor.constraint(
                 equalTo: rootView.centerXAnchor
+            ),
+
+            scanButton.topAnchor.constraint(
+                equalTo: detectButton.bottomAnchor,
+                constant: 16
+            ),
+            scanButton.centerXAnchor.constraint(
+                equalTo: rootView.centerXAnchor
             )
         ])
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 620, height: 390),
+            contentRect: NSRect(x: 0, y: 0, width: 620, height: 450),
             styleMask: [
                 .titled,
                 .closable,
@@ -197,6 +220,63 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 .setAccessibilityLabel(message)
 
             announce(message)
+        }
+    }
+
+    @objc private func scanUniversalControlInterface() {
+        guard AccessibilityPermission.isTrusted else {
+            announce(
+                "Accessibility permission is required before scanning."
+            )
+            return
+        }
+
+        guard let application =
+                AppDetector.findUniversalControl() else {
+            announce(
+                "Fender Universal Control is not running."
+            )
+            return
+        }
+
+        announce(
+            "Scanning Universal Control interface."
+        )
+
+        do {
+            let result = try AXScanner.scanUniversalControl(
+                processIdentifier: application.processIdentifier
+            )
+
+            let message =
+                "Scan complete. " +
+                "\(result.nodeCount) elements inspected. " +
+                "\(result.actionableCount) actionable elements found."
+
+            universalControlStatusLabel?.stringValue =
+                message + " Report saved."
+
+            universalControlStatusLabel?
+                .setAccessibilityLabel(
+                    message + " Report saved."
+                )
+
+            announce(message)
+
+            print(
+                "[SoundSight] Scan report: " +
+                result.reportURL.path
+            )
+        } catch {
+            let message =
+                "Scan failed. \(error.localizedDescription)"
+
+            universalControlStatusLabel?.stringValue = message
+            universalControlStatusLabel?
+                .setAccessibilityLabel(message)
+
+            announce(message)
+            print("[SoundSight] \(message)")
         }
     }
 

@@ -57,7 +57,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
 PLIST
 
 chmod +x "$MACOS_DIR/$APP_NAME"
-codesign --force --deep --sign - "$APP_DIR"
+codesign --force --deep --options runtime --sign "SoundSight Local Development" "$APP_DIR"
 
 echo "SoundSight.app created at:"
 echo "$APP_DIR"
